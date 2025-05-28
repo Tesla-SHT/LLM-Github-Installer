@@ -1,0 +1,5 @@
+dashscope 
+python-dotenv
+google-generativeai 
+python-dotenv
+rich
