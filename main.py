@@ -8,7 +8,7 @@ from config import load_environment_variables, get_available_apis, select_api_pr
 from github_utils import get_github_readme_content
 from llm_providers import create_llm_provider
 from command_executor import execute_command_interactive
-
+import os
 console = Console()
 
 def main():
@@ -28,10 +28,20 @@ def main():
     selected_provider = select_api_provider(available_apis)
     if not selected_provider:
         return
-    
+        
+    # 获取安装目录
+    install_directory = input("请输入项目安装目录路径 (留空使用当前目录): ").strip()
+    if not install_directory:
+        install_directory = os.getcwd()
+    else:
+        #install_directory = os.path.abspath(install_directory)
+        # 确保目录存在
+        os.makedirs(install_directory, exist_ok=True)
+
+    console.print(f"[INFO] 将使用安装目录: {install_directory}")
+
     # 创建LLM提供商实例
-    llm_provider = create_llm_provider(selected_provider, available_apis[selected_provider])
-    
+    llm_provider = create_llm_provider(selected_provider, available_apis[selected_provider], install_directory)
     # 获取GitHub项目URL
     github_project_url = input("请输入 GitHub 项目链接: ")
     

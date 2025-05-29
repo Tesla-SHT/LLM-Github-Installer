@@ -20,10 +20,13 @@ console = Console()
 class LLMProvider(ABC):
     """抽象基类，定义LLM提供商的通用接口"""
     
-    def __init__(self, api_key: str, model_name: str):
+    def __init__(self, api_key: str, model_name: str, install_directory: str = None):
         self.api_key = api_key
         self.model_name = model_name
+        self.install_directory = install_directory or os.getcwd()
         self.system_info = self._get_system_info()
+        console.print(f"[INFO] 使用的安装目录: {self.install_directory}")
+
     
     def _get_system_info(self) -> Dict[str, str]:
         """获取系统信息"""
@@ -41,6 +44,7 @@ class LLMProvider(ABC):
                     - 操作系统: {self.system_info['os']}
                     - 架构: {self.system_info['architecture']}
                     - Python版本: {self.system_info['python_version']}
+                    - 用户指定的安装目录: {self.install_directory}
 
                     请遵循以下规则：
                     1. 优先推荐使用conda创建虚拟环境
@@ -48,41 +52,35 @@ class LLMProvider(ABC):
                     3. 如果项目需要特殊配置，请明确指出
                     4. 命令应该适用于{self.system_info['os']}系统
                     5. 每行只包含一个命令
-
                     6. 如果需要用户提供信息（如API密钥等），使用<YOUR_XXX_HERE>格式占位符
                     7. 如果设置完成，最后一行返回 "DONE_SETUP_COMMANDS"
-                    8. ***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：-cd vggt && conda activate myenv && pip install -r requirements.txt，其中requirements.txt是项目的依赖文件。
+                    8. ***重要：所有操作都应该在用户指定的安装目录 {self.install_directory} 中进行
+                    9. 重要：你的每一行都会新开一个terminal，这会导致原本这一行的命令出现问题，所以请你把原本命令所需要的一些前置命令都输出(就像第9条规则，或者cd命令进入安装目录然后），并且用&&进行连接，
+                    10. 前一个规则基础上***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
+                    11. 在前一个规则基础上***如果需要克隆项目，请克隆到指定的安装目录 {self.install_directory} 中，另外你在git clone的时候需要先用cd命令进入这个文件夹，然后再通过&&把git clone在后面串联起来（比如cd install_directory && git clone URL)，或者对于pip install -r requirements.txt，你需要先cd到这个文件夹下，然后在cd命令后加上&& pip install ...
 
                     项目README内容：
                     {readme_content}
 
                     请分析该项目并生成安装配置命令序列，直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
 
-    def _get_continue_prompt(self, last_command: str, stdout: str, stderr: str,prompt_form_user:str) -> str:
+    def _get_continue_prompt(self, last_command: str, stdout: str, stderr: str, prompt_form_user: str) -> str:
         """获取继续执行的提示词"""
-        if prompt_form_user is None:
-            return f"""上一个命令: {last_command}
+        base_prompt = f"""上一个命令: {last_command}
                     执行结果:
                     stdout: {stdout}
                     stderr: {stderr}
                     
                     请基于执行结果决定下一步操作：
                     1. 如果执行成功且还需要更多步骤，请提供下一批命令
-                    2. 如果执行失败，请提供修复命令,如果返回的错误是找不到文件，请注意，每一次运行命令时，都会相当于新建一个终端，因此命令需要重新进入项目所在的文件夹，而且每当生成pip install 或者 conda install 命令时，请先激活环境。所以，在原来的命令上，用&&把所有的命令连接起来，例如：-cd vggt && conda activate myenv && pip install -r requirements.txt
+                    2. 如果执行失败，请提供修复命令,如果返回的错误是找不到文件，请注意，每一次运行命令时，都会相当于新建一个终端，因此需要该命令的所有前置命令，比如需要重新进入项目所在的文件夹，而且每当生成pip install 或者 conda install 命令时，请先激活环境。所以，在原来的命令上，用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
                     3. 如果所有步骤都已完成，请返回 "DONE_SETUP_COMMANDS"
+                    4. ***重要：记住用户指定的安装目录是 {self.install_directory}，所有必须要在这个目录下运行的命令都需要在前面加上(cd install_directory && command...)
                     请直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
-        return f"""上一个命令: {last_command}
-                    执行结果:
-                    stdout: {stdout}
-                    stderr: {stderr}
-                    
-                    请基于执行结果决定下一步操作：
-                    1. 如果执行成功且还需要更多步骤，请提供下一批命令
-                    2. 如果执行失败，请提供修复命令,如果返回的错误是找不到文件，请注意，每一次运行命令时，都会相当于新建一个终端，因此命令需要重新进入项目所在的文件夹，而且每当生成pip install 或者 conda install 命令时，请先激活环境。所以，在原来的命令上，用&&把所有的命令连接起来，例如：-cd vggt && conda activate myenv && pip install -r requirements.txt
-                    3. 如果所有步骤都已完成，请返回 "DONE_SETUP_COMMANDS"
-                    同时请注意：{prompt_form_user}
-                    请直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
-    
+        
+        if prompt_form_user:
+            return base_prompt + f"\n同时请注意：{prompt_form_user}"
+        return base_prompt
     def _parse_commands(self, response_text: str) -> List[str]:
         """解析响应文本，提取命令列表"""
         lines = response_text.strip().split('\n')
@@ -183,8 +181,8 @@ class LLMProvider(ABC):
 class DashScopeProvider(LLMProvider):
     """通义千问API提供商"""
     
-    def __init__(self, api_key: str, model_name: str = "qwen-turbo"):
-        super().__init__(api_key, model_name)
+    def __init__(self, api_key: str, model_name: str = "qwen-turbo", install_directory: str = None):
+        super().__init__(api_key, model_name, install_directory)
         try:
             import dashscope
             self.dashscope = dashscope
@@ -228,8 +226,8 @@ class DashScopeProvider(LLMProvider):
 class GeminiProvider(LLMProvider):
     """Google Gemini API提供商"""
     
-    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash-latest"):
-        super().__init__(api_key, model_name)
+    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash-latest", install_directory: str = None):
+        super().__init__(api_key, model_name, install_directory)
         try:
             from google import genai
             self.genai = genai
@@ -291,18 +289,20 @@ class GeminiProvider(LLMProvider):
             return ""
 
 
-def create_llm_provider(provider_name: str, config: Dict[str, Any]) -> Optional[LLMProvider]:
+def create_llm_provider(provider_name: str, config: Dict[str, Any], install_directory: str = None) -> Optional[LLMProvider]:
     """创建LLM提供商实例"""
     try:
-        if provider_name == "qwen":  # 修改：从 "dashscope" 改为 "qwen"
+        if provider_name == "qwen":
             return DashScopeProvider(
-                api_key=os.getenv("DASHSCOPE_API_KEY"),  # 直接从环境变量获取
-                model_name=config["model"]
+                api_key=os.getenv("DASHSCOPE_API_KEY"),
+                model_name=config["model"],
+                install_directory=install_directory
             )
         elif provider_name == "gemini":
             return GeminiProvider(
-                api_key=os.getenv("GOOGLE_API_KEY"),  # 直接从环境变量获取
-                model_name=config["model"]
+                api_key=os.getenv("GOOGLE_API_KEY"),
+                model_name=config["model"],
+                install_directory=install_directory
             )
         else:
             console.print(f"[ERROR] 不支持的提供商: {provider_name}")
