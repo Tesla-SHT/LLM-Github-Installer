@@ -48,26 +48,39 @@ class LLMProvider(ABC):
                     3. 如果项目需要特殊配置，请明确指出
                     4. 命令应该适用于{self.system_info['os']}系统
                     5. 每行只包含一个命令
+
                     6. 如果需要用户提供信息（如API密钥等），使用<YOUR_XXX_HERE>格式占位符
                     7. 如果设置完成，最后一行返回 "DONE_SETUP_COMMANDS"
+                    8. ***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：-cd vggt && conda activate myenv && pip install -r requirements.txt，其中requirements.txt是项目的依赖文件。
 
                     项目README内容：
                     {readme_content}
 
                     请分析该项目并生成安装配置命令序列，直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
 
-    def _get_continue_prompt(self, last_command: str, stdout: str, stderr: str) -> str:
+    def _get_continue_prompt(self, last_command: str, stdout: str, stderr: str,prompt_form_user:str) -> str:
         """获取继续执行的提示词"""
+        if prompt_form_user is None:
+            return f"""上一个命令: {last_command}
+                    执行结果:
+                    stdout: {stdout}
+                    stderr: {stderr}
+                    
+                    请基于执行结果决定下一步操作：
+                    1. 如果执行成功且还需要更多步骤，请提供下一批命令
+                    2. 如果执行失败，请提供修复命令,如果返回的错误是找不到文件，请注意，每一次运行命令时，都会相当于新建一个终端，因此命令需要重新进入项目所在的文件夹，而且每当生成pip install 或者 conda install 命令时，请先激活环境。所以，在原来的命令上，用&&把所有的命令连接起来，例如：-cd vggt && conda activate myenv && pip install -r requirements.txt
+                    3. 如果所有步骤都已完成，请返回 "DONE_SETUP_COMMANDS"
+                    请直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
         return f"""上一个命令: {last_command}
                     执行结果:
                     stdout: {stdout}
                     stderr: {stderr}
-
+                    
                     请基于执行结果决定下一步操作：
                     1. 如果执行成功且还需要更多步骤，请提供下一批命令
-                    2. 如果执行失败，请提供修复命令
+                    2. 如果执行失败，请提供修复命令,如果返回的错误是找不到文件，请注意，每一次运行命令时，都会相当于新建一个终端，因此命令需要重新进入项目所在的文件夹，而且每当生成pip install 或者 conda install 命令时，请先激活环境。所以，在原来的命令上，用&&把所有的命令连接起来，例如：-cd vggt && conda activate myenv && pip install -r requirements.txt
                     3. 如果所有步骤都已完成，请返回 "DONE_SETUP_COMMANDS"
-
+                    同时请注意：{prompt_form_user}
                     请直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
     
     def _parse_commands(self, response_text: str) -> List[str]:
@@ -144,9 +157,9 @@ class LLMProvider(ABC):
         
         return commands, message_history
     
-    def generate_next_commands(self, message_history: List[Dict], last_command: str, stdout: str, stderr: str) -> Tuple[List[str], List[Dict]]:
+    def generate_next_commands(self, message_history: List[Dict], last_command: str, stdout: str, stderr: str,prompt_form_user=None) -> Tuple[List[str], List[Dict]]:
         """基于执行结果生成下一批命令"""
-        prompt = self._get_continue_prompt(last_command, stdout, stderr)
+        prompt = self._get_continue_prompt(last_command, stdout, stderr,prompt_form_user)
         response_text = self._call_api(prompt, message_history)
         
         if not response_text:
@@ -163,6 +176,8 @@ class LLMProvider(ABC):
             self._display_commands(commands)
         
         return commands, message_history
+    
+
 
 
 class DashScopeProvider(LLMProvider):

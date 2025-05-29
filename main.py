@@ -1,12 +1,8 @@
 # --- rich 自动安装与导入 ---
-try:
-    from rich.console import Console
-    from rich.panel import Panel
-except ImportError:
-    import subprocess
-    subprocess.check_call(["python3", "-m", "pip", "install", "rich"])
-    from rich.console import Console
-    from rich.panel import Panel
+from rich.console import Console
+from rich.panel import Panel
+from rich.console import Console
+from rich.panel import Panel
 
 from config import load_environment_variables, get_available_apis, select_api_provider
 from github_utils import get_github_readme_content
@@ -100,7 +96,17 @@ def main():
                 command_index = 0
         else:
             console.print("\n[INFO] 命令执行失败，将输出反馈给大模型请求修正...")
+            
+            
+        
             new_commands, message_history = llm_provider.generate_next_commands(message_history, last_executed_command_for_ai, stdout, stderr)
+            console.print("\n[INFO] 大模型生成了新的命令。")
+            console.print("是否需要添加prompt来帮助生成命令？")
+            console.print("[bold green]请选择操作：[/bold green][yellow](y)[/yellow] 是  [yellow](n)[/yellow] 不需要")
+            yes_or_no = input("请输入 (y/n): ").strip().lower()
+            if yes_or_no == 'y':
+                user_prompt = input("请输入prompt: ")
+                new_commands, message_history = llm_provider.generate_next_commands(message_history, last_executed_command_for_ai, stdout, stderr, user_prompt)
             current_commands = new_commands
             command_index = 0
 

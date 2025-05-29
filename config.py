@@ -1,6 +1,6 @@
 import os
 import dashscope
-from google import genai
+import google.generativeai as genai  
 from dotenv import load_dotenv
 from rich.console import Console
 
@@ -31,16 +31,23 @@ def get_available_apis():
     # 检查Gemini API
     google_key = os.getenv("GOOGLE_API_KEY")
     if google_key:
-        try:
-            client = genai.Client(api_key=google_key)
-            available_apis['gemini'] = {
-                'name': 'Google Gemini',
-                'model': os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest"),
-                'client': client
-            }
-            console.print("[INFO] Google Gemini API 配置成功。")
-        except Exception as e:
-            console.print(f"[WARN] Google Gemini API 配置失败: {e}")
+     try:
+        # 新版API初始化步骤
+        genai.configure(api_key=google_key)  # 全局配置密钥
+        
+        # 创建模型实例（需替换模型名，如 'gemini-1.5-pro-latest'）
+        model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest")
+        model = genai.GenerativeModel(model_name)  # ✅ 初始化模型
+        
+        # 将模型对象存入配置字典（建议语义化修改key为 'model'）
+        available_apis['gemini'] = {
+            'name': 'Google Gemini',
+            'model': model_name,
+            'instance': model  # 更清晰的命名，避免歧义
+        }
+        console.print("[INFO] Google Gemini API 配置成功。")
+     except Exception as e:
+        console.print(f"[WARN] Google Gemini API 配置失败: {e}")
     
     return available_apis
 
