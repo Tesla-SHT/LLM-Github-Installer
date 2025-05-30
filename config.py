@@ -21,7 +21,7 @@ def get_available_apis():
             dashscope.api_key = dashscope_key
             available_apis['qwen'] = {
                 'name': '通义千问',
-                'model': os.getenv("QWEN_MODEL_NAME", "qwen-plus"),
+                'model': os.getenv("QWEN_MODEL_NAME", "qwen-plus-latest"),
                 'client': None  # dashscope使用全局配置
             }
             console.print("[INFO] 通义千问 API 配置成功。")
@@ -36,7 +36,7 @@ def get_available_apis():
         genai.configure(api_key=google_key)  # 全局配置密钥
         
         # 创建模型实例（需替换模型名，如 'gemini-1.5-pro-latest'）
-        model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-1.5-flash-latest")
+        model_name = os.getenv("GEMINI_MODEL_NAME", "gemini-2.0-flash")
         model = genai.GenerativeModel(model_name)  # ✅ 初始化模型
         
         # 将模型对象存入配置字典（建议语义化修改key为 'model'）
