@@ -47,10 +47,10 @@ class LLMProvider(ABC):
                     - 用户指定的安装目录: {self.install_directory}
 
                     请遵循以下规则：
-                    1. 优先推荐使用conda创建虚拟环境
-                    2. 如果项目有requirements.txt，使用pip安装依赖
+                    
+                    2. 如果项目有requirements.txt，使用pip安装依赖,推荐使用conda或者uv创建虚拟环境。如果没有说要安装python环境，则不需要用conda
                     3. 如果项目需要特殊配置，请明确指出
-                    4. 命令应该适用于{self.system_info['os']}系统
+                    4. 命令应该适用于{self.system_info['os']}系统，如果是Linux系统，请将shell变成bash，或者使用bash -c命令来完成
                     5. 每行只包含一个命令
                     6. 如果需要用户提供信息（如API密钥等），使用<YOUR_XXX_HERE>格式占位符
                     7. 如果设置完成，最后一行返回 "DONE_SETUP_COMMANDS"
@@ -58,8 +58,9 @@ class LLMProvider(ABC):
                     9. 重要：你的每一行都会新开一个terminal，这会导致原本这一行的命令出现问题，所以请你把原本命令所需要的一些前置命令都输出(就像第9条规则，或者cd命令进入安装目录然后），并且用&&进行连接，
                     10. 前一个规则基础上***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
                     11. 在前一个规则基础上***如果需要克隆项目，请克隆到指定的安装目录 {self.install_directory} 中，另外你在git clone的时候需要先用cd命令进入这个文件夹，然后再通过&&把git clone在后面串联起来（比如cd install_directory && git clone URL)，或者对于pip install -r requirements.txt，你需要先cd到这个文件夹下，然后在cd命令后加上&& pip install ...
+                    12. 尽量将命令拆分开来（如果要用&&连接则不用拆分）
 
-                    项目README内容：
+                    仔细阅读下面项目README内容，提取出重要安装信息：
                     {readme_content}
 
                     请分析该项目并生成安装配置命令序列，直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
@@ -120,7 +121,7 @@ class LLMProvider(ABC):
             return
             
         table = Table(title="大模型推荐的初始命令", style="cyan")
-        table.add_column("序号", justify="right", style="cyan", no_wrap=True)
+        table.add_column("序号", justify="right", style="cyan", no_wrap=True, width=3)
         table.add_column("命令", style="magenta")
         
         for i, command in enumerate(commands, 1):
@@ -137,7 +138,18 @@ class LLMProvider(ABC):
         """生成初始命令序列"""
         console.print(f"[AI] 正在向{self.model_name}请求初始命令...")
         
+        # 询问用户是否要添加额外的提示
+        console.print("[bold cyan]是否需要添加额外的提示来帮助大模型更好地生成命令？[/bold cyan]")
+        user_wants_prompt = input("请选择 (y/n): ").strip().lower() == 'y'
+        
+        user_additional_prompt = ""
+        if user_wants_prompt:
+            user_additional_prompt = input("请输入您的额外提示: ").strip()
+        
         prompt = self._get_initial_prompt(readme_content)
+        if user_additional_prompt:
+            prompt += f"\n\n用户额外要求：{user_additional_prompt}"
+        
         response_text = self._call_api(prompt)
         
         if not response_text:
