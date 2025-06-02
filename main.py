@@ -54,7 +54,7 @@ def main():
     console.print(f"[INFO] 成功获取项目信息: {owner}/{repo_name}")
     
     # 获取初始命令
-    current_commands, message_history = llm_provider.generate_initial_commands(readme)
+    current_commands, message_history = llm_provider.generate_initial_commands(readme, owner, repo_name)
     
     if not message_history and not current_commands:
         console.print("无法初始化与大模型的会话或获取初始命令，脚本终止。")

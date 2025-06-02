@@ -2,3 +2,4 @@ dashscope
 python-dotenv
 rich
 google-genai
+google.generativeai

@@ -36,7 +36,7 @@ class LLMProvider(ABC):
             "python_version": platform.python_version()
         }
     
-    def _get_initial_prompt(self, readme_content: str) -> str:
+    def _get_initial_prompt(self, readme_content: str, owner: str, repo_name: str) -> str:
         """获取初始安装命令的提示词"""
         return f"""你是一个专业的开发环境配置助手。请根据GitHub项目的README文件，为用户生成详细的安装和配置命令序列。
 
@@ -47,7 +47,7 @@ class LLMProvider(ABC):
                     - 用户指定的安装目录: {self.install_directory}
 
                     请遵循以下规则：
-                    
+                    1.第一步请获得git clone的URL，也就是git clone git@github.com:{owner}/{repo_name}.git
                     2. 如果项目有requirements.txt，使用pip安装依赖,推荐使用conda或者uv创建虚拟环境。如果没有说要安装python环境，则不需要用conda
                     3. 如果项目需要特殊配置，请明确指出
                     4. 命令应该适用于{self.system_info['os']}系统，如果是Linux系统，请将shell变成bash，或者使用bash -c命令来完成
@@ -143,7 +143,7 @@ class LLMProvider(ABC):
         """调用API的抽象方法，由子类实现"""
         pass
     
-    def generate_initial_commands(self, readme_content: str) -> Tuple[List[str], List[Dict]]:
+    def generate_initial_commands(self, readme_content: str, owner: str, repo_name: str) -> Tuple[List[str], List[Dict]]:
         """生成初始命令序列"""
         console.print(f"[AI] 正在向{self.model_name}请求初始命令...")
         
@@ -155,7 +155,7 @@ class LLMProvider(ABC):
         if user_wants_prompt:
             user_additional_prompt = input("请输入您的额外提示: ").strip()
         
-        prompt = self._get_initial_prompt(readme_content)
+        prompt = self._get_initial_prompt(readme_content, owner, repo_name)
         if user_additional_prompt:
             prompt += f"\n\n用户额外要求：{user_additional_prompt}"
         
