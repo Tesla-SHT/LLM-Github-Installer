@@ -84,8 +84,16 @@ def main():
                 placeholder_start = command.find("<YOUR_")
                 placeholder_end = command.find("_HERE>", placeholder_start) + len("_HERE>")
                 placeholder = command[placeholder_start:placeholder_end]
-                user_value = input(f"\n[INPUT] 命令 '{command}' 包含占位符。\n  请输入占位符 '{placeholder}' 的值: ")
+                
+                # 提供更清晰的提示信息
+                console.print(f"\n[bold yellow][INPUT][/bold yellow] 当前命令需要用户输入信息:")
+                console.print(f"命令: [cyan]{command}[/cyan]")
+                console.print(f"需要输入: [yellow]{placeholder}[/yellow]")
+                
+                user_value = input(f"请输入 {placeholder} 的值: ")
                 command = command.replace(placeholder, user_value)
+                
+                console.print(f"[green]已替换占位符，新命令为:[/green] {command}")
             except Exception as e:
                 console.print(f"[WARN] 处理占位符时出错: {e}。将按原样使用命令。")
 
@@ -107,8 +115,6 @@ def main():
         else:
             console.print("\n[INFO] 命令执行失败，将输出反馈给大模型请求修正...")
             
-            
-        
             new_commands, message_history = llm_provider.generate_next_commands(message_history, last_executed_command_for_ai, stdout, stderr)
             console.print("\n[INFO] 大模型生成了新的命令。")
             console.print("是否需要添加prompt来帮助生成命令？")

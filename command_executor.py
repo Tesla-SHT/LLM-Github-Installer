@@ -10,7 +10,7 @@ def execute_command_interactive(command_str):
     """
     console.rule("[bold yellow]即将执行的命令")
     command_str1= command_str.strip()
-    syntax = Syntax(command_str, "bash", theme="monokai", line_numbers=False)
+    syntax = Syntax(command_str, "bash", theme="monokai", line_numbers=False, word_wrap=True)
     console.print(syntax)
     console.rule()
 
