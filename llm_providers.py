@@ -59,7 +59,7 @@ class LLMProvider(ABC):
                     10. 前一个规则基础上***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
                     11. 在前一个规则基础上***如果需要克隆项目，请克隆到指定的安装目录 {self.install_directory} 中，另外你在git clone的时候需要先用cd命令进入这个文件夹，然后再通过&&把git clone在后面串联起来（比如cd install_directory && git clone URL)，或者对于pip install -r requirements.txt，你需要先cd到这个文件夹下，然后在cd命令后加上&& pip install ...
                     12. 尽量将命令拆分开来（如果要用&&连接则不用拆分）
-                    13. windows系统下，所有cd 命令之前，都需要再加上一个目录名字，例如你想进入d盘，请使用cd d: && d:,请注意是所有命令，包括类似 cd d: && d: && conda activate myenv && pip install 这样的命令都需要在前面加上cd d: && d:，请注意是所有命令，包括类似 cd d: && d: && conda activate myenv && pip install -r requirements.txt 这样的命令都需要在前面加上cd d: && d:
+                    13. windows系统下，所有cd 命令之前，都需要再加上一个目录名字，例如你想进入d盘，请使用cd \d d:,请注意是所有命令，包括类似 cd \d d: && conda activate myenv && pip install 这样的命令都需要在前面加上cd \d d:，请注意是所有命令，包括类似 cd \d d: && conda activate myenv && pip install -r requirements.txt 这样的命令都需要在前面加上cd \d d:
                     14. 如果需要用户输入一些api，路径之类的自定义的内容,请用 <YOUR_VALUE_HERE>，便于识别和重新生成！
                     15. ***如果项目需要多个API密钥或配置项，请将每个API的设置分成独立的命令。例如：
                         - 错误示例：export API_KEY1=<YOUR_API_KEY1_HERE> && export API_KEY2=<YOUR_API_KEY2_HERE>
