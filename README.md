@@ -8,7 +8,6 @@
 - 📋 **自动生成命令**: 根据项目特点生成适合的安装命令序列
 - 🔄 **交互式执行**: 支持命令的逐步执行和错误处理
 - 🌐 **多 API 支持**: 支持阿里云通义千问和 Google Gemini API
-- 🐍 **环境优化**: 优先推荐使用 conda 虚拟环境进行依赖管理
 - 🎨 **美观界面**: 使用 Rich 库提供彩色终端输出
 
 ## 🛠️ 安装
@@ -126,6 +125,7 @@ LLM-Github-Installer/
 - 智能解析安装步骤和依赖关系
 
 ### 2. 命令生成
+
 - 基于项目特点生成定制化命令
 - 优先推荐 conda 虚拟环境
 - 处理占位符和用户输入项
@@ -139,6 +139,10 @@ LLM-Github-Installer/
 - 自动将执行结果反馈给 LLM
 - 基于错误信息生成修复命令
 - 智能重试机制
+  
+### 5. prompt 建议：
+- 推荐在初始命令生成前加入prompt"请生成一条命令，运行项目中的python文件"帮助检验环境配置
+- 如果遇到错误`finished with status ’error’`，可以尝试重新运行，并在一开始加入prompt“请生成一条命令，运行项目中的python文件，注意请不要直接安装requirements中要求的库”，这样LLM会在运行python文件时自己补充安装需要的库
 
 ## 📝 示例场景
 
@@ -179,12 +183,12 @@ LLM-Github-Installer/
 
 ## 📋 TODO
 
-- [ ] 支持更多 LLM 提供商（OpenAI GPT, Claude 等）
-- [ ] 添加命令执行历史记录
-- [ ] 支持批量处理多个项目
-- [ ] 添加 GUI 界面
-- [ ] 支持 Docker 容器化部署
-- [ ] 添加命令模板系统
+- [ ] 优化提示工程 (Prompt Engineering) 以提高安装成功率
+- [ ] 开发 Web 版本，提升用户体验和易用性
+- [ ] 增强对用户输入的理解和响应能力
+- [ ] 为不同编程语言创建安装模板
+- [ ] 支持更多大语言模型 (LLM)
+
 
 ## ⚠️ 注意事项
 
@@ -192,23 +196,9 @@ LLM-Github-Installer/
 2. **命令安全**: 执行前请仔细检查生成的命令，避免潜在的安全风险
 3. **网络要求**: 需要稳定的网络连接访问 GitHub 和 API 服务
 4. **权限问题**: 某些命令可能需要管理员权限
+   
 
-## 📄 许可证
 
-本项目采用 MIT 许可证。详情请见 [LICENSE](LICENSE) 文件。
-
-## 🙏 致谢
-
-- [Rich](https://github.com/Textualize/rich) - 美观的终端输出
-- [阿里云通义千问](https://tongyi.aliyun.com/) - 强大的中文 LLM
-- [Google Gemini](https://ai.google.dev/) - 先进的多模态 AI
-- [python-dotenv](https://github.com/theskumar/python-dotenv) - 环境变量管理
-
-## 📞 联系方式
-
-如有问题或建议，请：
-- 提交 [Issue](https://github.com/your-username/LLM-Github-Installer/issues)
-- 发送邮件至：your-email@example.com
 
 ---
 

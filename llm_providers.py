@@ -59,7 +59,7 @@ class LLMProvider(ABC):
                     10. 前一个规则基础上***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
                     11. 在前一个规则基础上***如果需要克隆项目，请克隆到指定的安装目录 {self.install_directory} 中，另外你在git clone的时候需要先用cd命令进入这个文件夹，然后再通过&&把git clone在后面串联起来（比如cd install_directory && git clone URL)，或者对于pip install -r requirements.txt，你需要先cd到这个文件夹下，然后在cd命令后加上&& pip install ...
                     12. 尽量将命令拆分开来（如果要用&&连接则不用拆分）
-                    13. windows系统下，所有cd 命令之前，都需要再加上一个目录名字，例如你想进入d盘，请使用cd \d d:,请注意是所有命令，包括类似 cd \d d: && conda activate myenv && pip install 这样的命令都需要在前面加上cd \d d:，请注意是所有命令，包括类似 cd \d d: && conda activate myenv && pip install -r requirements.txt 这样的命令都需要在前面加上cd \d d:
+                    13. windows系统下，所有cd 命令之前，都需要再加上一个目录名字，例如你想进入d盘，请使用cd /d d:\,请注意是所有命令，包括类似 cd /d d:\ && conda activate myenv && pip install 这样的命令都需要在前面加上cd /d d:\. 另外在地址最后加上'/'，例如 cd /d d:\myproject\，然后和后续命令用&&连接起来，
                     14. 如果需要用户输入一些api，路径之类的自定义的内容,请用 <YOUR_VALUE_HERE>，便于识别和重新生成！
                     15. ***如果项目需要多个API密钥或配置项，请将每个API的设置分成独立的命令。例如：
                         - 错误示例：export API_KEY1=<YOUR_API_KEY1_HERE> && export API_KEY2=<YOUR_API_KEY2_HERE>
@@ -76,7 +76,31 @@ class LLMProvider(ABC):
 
     def _get_continue_prompt(self, last_command: str, stdout: str, stderr: str, prompt_form_user: str) -> str:
         """获取继续执行的提示词"""
-        base_prompt = f"""上一个命令: {last_command}
+        base_prompt = f"""你是一个专业的开发环境配置助手。基于上一个命令的执行结果，请继续为用户生成后续的安装和配置命令序列。
+
+                    当前系统信息：
+                    - 操作系统: {self.system_info['os']}
+                    - 架构: {self.system_info['architecture']}
+                    - Python版本: {self.system_info['python_version']}
+                    - 用户指定的安装目录: {self.install_directory}
+
+                    请遵循以下规则：
+                    1. 如果项目有requirements.txt，使用pip安装依赖,推荐使用conda或者uv创建虚拟环境。如果没有说要安装python环境，则不需要用conda
+                    2. 如果项目需要特殊配置，请明确指出
+                    3. 命令应该适用于{self.system_info['os']}系统，如果是Linux系统，请将shell变成bash，或者使用bash -c命令来完成
+                    4. 每行只包含一个命令
+                    5. 如果需要用户提供信息（如API密钥等），使用<YOUR_XXX_HERE>格式占位符
+                    6. 如果设置完成，最后一行返回 "DONE_SETUP_COMMANDS"
+                    7. ***重要：所有操作都应该在用户指定的安装目录 {self.install_directory} 中进行
+                    8. 重要：你的每一行都会新开一个terminal，这会导致原本这一行的命令出现问题，所以请你把原本命令所需要的一些前置命令都输出，并且用&&进行连接
+                    9. ***请检查所有生成的命令：每一个命令都需要重新进入项目所在的文件夹，然后，每当生成pip install 或者 conda install 命令时，请先激活环境，并用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
+                    10. 尽量将命令拆分开来（如果要用&&连接则不用拆分）
+                    11. windows系统下，所有cd 命令之前，都需要再加上一个目录名字，例如你想进入d盘，请使用cd /d d:\,请注意是所有命令，包括类似 cd /d d:\ && conda activate myenv && pip install 这样的命令都需要在前面加上cd /d d:\. 另外在地址最后加上'/'，例如 cd /d d:\myproject\，然后和后续命令用&&连接起来，
+                    12. 如果需要用户输入一些api，路径之类的自定义的内容,请用 <YOUR_VALUE_HERE>，便于识别和重新生成！
+                    13. ***如果项目需要多个API密钥或配置项，请将每个API的设置分成独立的命令
+                    
+                    上一个命令执行情况：
+                    命令: {last_command}
                     执行结果:
                     stdout: {stdout}
                     stderr: {stderr}
@@ -86,6 +110,7 @@ class LLMProvider(ABC):
                     2. 如果执行失败，请提供修复命令,如果返回的错误是找不到文件，请注意，每一次运行命令时，都会相当于新建一个终端，因此需要该命令的所有前置命令，比如需要重新进入项目所在的文件夹，而且每当生成pip install 或者 conda install 命令时，请先激活环境。所以，在原来的命令上，用&&把所有的命令连接起来，例如：cd {self.install_directory} && conda activate myenv && pip install -r requirements.txt
                     3. 如果所有步骤都已完成，请返回 "DONE_SETUP_COMMANDS"
                     4. ***重要：记住用户指定的安装目录是 {self.install_directory}，所有必须要在这个目录下运行的命令都需要在前面加上(cd install_directory && command...)
+                    
                     请直接返回命令列表，每行一个命令，不要添加额外的解释文本："""
         
         if prompt_form_user:
